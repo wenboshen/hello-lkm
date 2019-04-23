@@ -8,22 +8,22 @@
 
 static char msg[MAX_SIZE];
 
-/*static int hello_proc_show(struct seq_file *m, void *v) {*/
-/*seq_printf(m, "Hello proc!\n");*/
+/*static int hello_lkm_show(struct seq_file *m, void *v) {*/
+/*seq_printf(m, "Hello lkm!\n");*/
 /*return 0;*/
 /*}*/
 
-/*static int hello_proc_open(struct inode *inode, struct  file *file) {*/
-/*return single_open(file, hello_proc_show, NULL);*/
+/*static int hello_lkm_open(struct inode *inode, struct  file *file) {*/
+/*return single_open(file, hello_lkm_show, NULL);*/
 /*}*/
 
 
-/*ssize_t proc_read(struct file *filp,char __user *buf,size_t count,loff_t *offp ) */
-/*{*/
-/*sprintf(msg, "%s", "hello proc is read");*/
-/*printk("proc_read:%s\n", msg);*/
-/*return copy_to_user(buf, msg, strlen(msg));*/
-/*}*/
+ssize_t proc_read(struct file *filp,char __user *buf,size_t count,loff_t *offp ) 
+{
+	/*sprintf(msg, "%s", "hello lkm is read");*/
+	printk("lkm_read:%s\n", msg);
+	return 0;
+}
 
 
 static void traversal_thread_group(struct task_struct * tsk){
@@ -69,24 +69,24 @@ ssize_t proc_write(struct file *filp,const char *buf,size_t count,loff_t *offp)
 	return count;
 }
 
-static const struct file_operations hello_proc_fops = {
+static const struct file_operations hello_lkm_fops = {
 	/*.owner = THIS_MODULE,*/
-	/*.open = hello_proc_open,*/
-	/*.read = proc_read,*/
+	/*.open = hello_lkm_open,*/
+	.read = proc_read,
 	.write = proc_write,
 	/*.llseek = seq_lseek,*/
 	/*.release = single_release,*/
 };
 
-static int __init hello_proc_init(void) {
-	proc_create("hello_proc", 0666, NULL, &hello_proc_fops);
+static int __init hello_lkm_init(void) {
+	proc_create("hello_lkm", 0666, NULL, &hello_lkm_fops);
 	return 0;
 }
 
-static void __exit hello_proc_exit(void) {
-	remove_proc_entry("hello_proc", NULL);
+static void __exit hello_lkm_exit(void) {
+	remove_proc_entry("hello_lkm", NULL);
 }
 
 MODULE_LICENSE("GPL");
-module_init(hello_proc_init);
-module_exit(hello_proc_exit);
+module_init(hello_lkm_init);
+module_exit(hello_lkm_exit);
