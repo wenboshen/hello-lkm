@@ -16,12 +16,56 @@ static char msg[MAX_SIZE];
 /*static int hello_lkm_open(struct inode *inode, struct  file *file) {*/
 /*return single_open(file, hello_lkm_show, NULL);*/
 /*}*/
+void read_cr4(void) {
+#ifdef __x86_64__
+	u64 cr0, cr2, cr3, cr4;
+	__asm__ __volatile__ (
+	    "mov %%cr0, %%rax\n\t"
+	    "mov %%eax, %0\n\t"
+	    "mov %%cr2, %%rax\n\t"
+	    "mov %%eax, %1\n\t"
+	    "mov %%cr3, %%rax\n\t"
+	    "mov %%eax, %2\n\t"
+	    "mov %%cr4, %%rax\n\t"
+	    "mov %%eax, %3\n\t"
+	: "=m" (cr0), "=m" (cr2), "=m" (cr3), "=m" (cr4)
+	: /* no input */
+	: "%rax"
+	);
+#elif defined(__i386__)
+	u32 cr0, cr2, cr3;
+	__asm__ __volatile__ (
+	    "mov %%cr0, %%eax\n\t"
+	    "mov %%eax, %0\n\t"
+	    "mov %%cr2, %%eax\n\t"
+	    "mov %%eax, %1\n\t"
+	    "mov %%cr3, %%eax\n\t"
+	    "mov %%eax, %2\n\t"
+	: "=m" (cr0), "=m" (cr2), "=m" (cr3)
+	: /* no input */
+	: "%eax"
+	);
+#endif
+	printk(KERN_INFO "cr0 = 0x%llx\n", cr0);
+	printk(KERN_INFO "cr2 = 0x%llx\n", cr2);
+	printk(KERN_INFO "cr3 = 0x%llx\n", cr3);
+	printk(KERN_INFO "cr4 = 0x%llx\n", cr4);
+	return;
+}
 
+/*u64 get_cycles(){*/
+/*unsigned int a=0, d=0;*/
+/*int ecx=(1<<30)+1; //What counter it selects?*/
+/*__asm __volatile("rdpmc" : "=a"(a), "=d"(d) : "c"(ecx));*/
+/*return ((long long)a) | (((long long)d) << 32);*/
+/*}*/
 
 ssize_t proc_read(struct file *filp,char __user *buf,size_t count,loff_t *offp ) 
 {
 	/*sprintf(msg, "%s", "hello lkm is read");*/
 	printk("lkm_read:%s\n", msg);
+	read_cr4();
+	printk("Cycle Count: %llx\n", get_cycles());
 	return 0;
 }
 
