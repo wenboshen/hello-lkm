@@ -53,19 +53,19 @@ void read_cr4(void) {
 	return;
 }
 
-/*u64 get_cycles(){*/
-/*unsigned int a=0, d=0;*/
-/*int ecx=(1<<30)+1; //What counter it selects?*/
-/*__asm __volatile("rdpmc" : "=a"(a), "=d"(d) : "c"(ecx));*/
-/*return ((long long)a) | (((long long)d) << 32);*/
-/*}*/
+u64 get_pmc(void){
+	unsigned int a=0, d=0;
+	int ecx=(1<<30)+1; //What counter it selects?
+	__asm __volatile("rdpmc" : "=a"(a), "=d"(d) : "c"(ecx));
+	return ((long long)a) | (((long long)d) << 32);
+}
 
 ssize_t proc_read(struct file *filp,char __user *buf,size_t count,loff_t *offp ) 
 {
 	/*sprintf(msg, "%s", "hello lkm is read");*/
 	printk("lkm_read:%s\n", msg);
 	read_cr4();
-	printk("Cycle Count: %llx\n", get_cycles());
+	printk("Cycle Count: %llx\n", get_pmc());
 	return 0;
 }
 
