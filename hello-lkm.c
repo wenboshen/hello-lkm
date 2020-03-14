@@ -3,10 +3,11 @@
 #include <linux/seq_file.h>
 #include <asm/uaccess.h>	/* for copy_*_user */
 #include <linux/sched/signal.h>
+#include <asm/perf_event.h>
 
 #define MAX_SIZE	1024
 
-static char msg[MAX_SIZE];
+/*static char msg[MAX_SIZE];*/
 
 /*static int hello_lkm_show(struct seq_file *m, void *v) {*/
 /*seq_printf(m, "Hello lkm!\n");*/
@@ -60,18 +61,12 @@ u64 get_pmc(void){
 	return ((long long)a) | (((long long)d) << 32);
 }
 
-ssize_t proc_read(struct file *filp,char __user *buf,size_t count,loff_t *offp ) 
-{
-	/*sprintf(msg, "%s", "hello lkm is read");*/
-	printk("lkm_read:%s\n", msg);
-	read_cr4();
-	printk("Cycle Count: %llx\n", get_pmc());
-	return 0;
-}
+
 
 
 static void traversal_thread_group(struct task_struct * tsk){
 	struct task_struct * curr_thread = NULL;
+	struct pt_regs * curr_regs = NULL;
 	unsigned long tg_offset = offsetof(struct task_struct, thread_group);
 
 	curr_thread = (struct task_struct *) (((unsigned long)tsk->thread_group.next) - tg_offset);
@@ -80,9 +75,13 @@ static void traversal_thread_group(struct task_struct * tsk){
 	/*return;*/
 	/*}*/
 	while (curr_thread != tsk){
-		printk("\t\tTHREAD TSK=%llx\tPID=%d\tSTACK=%llx \tCOMM=%s\tMM=%llx\tACTIVE_MM=%llx\n", 
+
+		curr_regs = task_pt_regs(curr_thread);
+		printk("\t\tTHREAD TSK=%llx\tPID=%d\tSTACK=%llx\tCOMM=%s\tMM=%llx\tACTIVE_MM=%llx\tCRED=%llx\n", 
 				(u64)curr_thread, curr_thread->pid, (u64)curr_thread->stack,
-				curr_thread->comm, (u64)curr_thread->mm, (u64)curr_thread->active_mm);
+				curr_thread->comm, (u64)curr_thread->mm, (u64)curr_thread->active_mm,
+				/*curr_regs->sp, curr_regs->ip,*/
+				(u64)curr_thread->cred);
 		curr_thread = (struct task_struct *) (((unsigned long)curr_thread->thread_group.next) - tg_offset);
 	}
 }
@@ -99,6 +98,18 @@ static void traversal_process(void) {
 		traversal_thread_group(tsk);
 	}
 }
+
+ssize_t proc_read(struct file *filp,char __user *buf,size_t count,loff_t *offp ) 
+{
+
+	traversal_process();
+	/*sprintf(msg, "%s", "hello lkm is read");*/
+	/*printk("lkm_read:%s\n", msg);*/
+	/*read_cr4();*/
+	/*printk("Cycle Count: %llx\n", get_pmc());*/
+	return 0;
+}
+
 
 ssize_t proc_write(struct file *filp,const char *buf,size_t count,loff_t *offp)
 {
