@@ -8,7 +8,7 @@
 
 #define MAX_SIZE	1024
 
-static char msg[MAX_SIZE];
+/*static char msg[MAX_SIZE];*/
 
 /*static int hello_lkm_show(struct seq_file *m, void *v) {*/
 /*seq_printf(m, "Hello lkm!\n");*/
@@ -67,8 +67,8 @@ u64 get_pmc(void){
 
 static void traversal_thread_group(struct task_struct * tsk){
 	struct task_struct * curr_thread = NULL;
-	unsigned long tg_offset = offsetof(struct task_struct, thread_group);
 	struct pt_regs * curr_regs = NULL;
+	unsigned long tg_offset = offsetof(struct task_struct, thread_group);
 
 	curr_thread = (struct task_struct *) (((unsigned long)tsk->thread_group.next) - tg_offset);
 	/*if (curr_thread == tsk){*/
@@ -103,14 +103,14 @@ static void traversal_process(void) {
 
 ssize_t proc_read(struct file *filp,char __user *buf,size_t count,loff_t *offp ) 
 {
-	/*sprintf(msg, "%s", "hello lkm is read");*/
-	printk("lkm_read:%s\n", msg);
-	/*read_cr4();*/
+
 	traversal_process();
-	printk("Cycle Count: %llx\n", get_pmc());
+	/*sprintf(msg, "%s", "hello lkm is read");*/
+	/*printk("lkm_read:%s\n", msg);*/
+	/*read_cr4();*/
+	/*printk("Cycle Count: %llx\n", get_pmc());*/
 	return 0;
 }
-
 
 
 ssize_t proc_write(struct file *filp,const char *buf,size_t count,loff_t *offp)
