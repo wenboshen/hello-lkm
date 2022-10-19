@@ -1,4 +1,5 @@
 # Prerequisites
+.cache.mk
 *.d
 
 # Object files
