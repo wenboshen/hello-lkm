@@ -3,6 +3,8 @@
 #include <linux/seq_file.h>
 #include <asm/uaccess.h>	/* for copy_*_user */
 #include <linux/sched/signal.h>
+#include <linux/init_task.h>
+#include <asm/perf_event.h>
 
 #define MAX_SIZE	1024
 
@@ -60,19 +62,13 @@ u64 get_pmc(void){
 	return ((long long)a) | (((long long)d) << 32);
 }
 
-ssize_t proc_read(struct file *filp,char __user *buf,size_t count,loff_t *offp ) 
-{
-	/*sprintf(msg, "%s", "hello lkm is read");*/
-	printk("lkm_read:%s\n", msg);
-	read_cr4();
-	printk("Cycle Count: %llx\n", get_pmc());
-	return 0;
-}
+
 
 
 static void traversal_thread_group(struct task_struct * tsk){
 	struct task_struct * curr_thread = NULL;
 	unsigned long tg_offset = offsetof(struct task_struct, thread_group);
+	struct pt_regs * curr_regs = NULL;
 
 	curr_thread = (struct task_struct *) (((unsigned long)tsk->thread_group.next) - tg_offset);
 	/*if (curr_thread == tsk){*/
@@ -80,25 +76,42 @@ static void traversal_thread_group(struct task_struct * tsk){
 	/*return;*/
 	/*}*/
 	while (curr_thread != tsk){
-		printk("\t\tTHREAD TSK=%llx\tPID=%d\tSTACK=%llx \tCOMM=%s\tMM=%llx\tACTIVE_MM=%llx\n", 
+		curr_regs = task_pt_regs(curr_thread);
+		printk("\t\tTHREAD TSK=%llx\tPID=%d\tSTACK=%llx \tCOMM=%s\tMM=%llx\tACTIVE_MM=%llx\tUSER_SP=%lx\tUSER_PC=%lx\\n", 
 				(u64)curr_thread, curr_thread->pid, (u64)curr_thread->stack,
-				curr_thread->comm, (u64)curr_thread->mm, (u64)curr_thread->active_mm);
+				curr_thread->comm, (u64)curr_thread->mm, (u64)curr_thread->active_mm,
+				curr_regs->sp, curr_regs->ip);
 		curr_thread = (struct task_struct *) (((unsigned long)curr_thread->thread_group.next) - tg_offset);
 	}
 }
 
 static void traversal_process(void) {
 	struct task_struct * tsk = NULL;
+	struct pt_regs * curr_regs = NULL;
 
 	
 	traversal_thread_group(&init_task);
 	for_each_process(tsk){
-		printk("PROCESS\tTHREAD TSK=%llx\tPID=%d\tSTACK=%llx \tCOMM=%s\tMM=%llx\tACTIVE_MM=%llx\n", 
+		curr_regs = task_pt_regs(tsk);
+		printk("PROCESS\tTHREAD TSK=%llx\tPID=%d\tSTACK=%llx \tCOMM=%s\tMM=%llx\tACTIVE_MM=%llx\tUSER_SP=%lx\tUSER_PC=%lx\n", 
 				(u64)tsk, tsk->pid, (u64)tsk->stack, tsk->comm,
-				(u64)tsk->mm, (u64)tsk->active_mm);
+				(u64)tsk->mm, (u64)tsk->active_mm, 
+				curr_regs->sp, curr_regs->ip);
 		traversal_thread_group(tsk);
 	}
 }
+
+ssize_t proc_read(struct file *filp,char __user *buf,size_t count,loff_t *offp ) 
+{
+	/*sprintf(msg, "%s", "hello lkm is read");*/
+	printk("lkm_read:%s\n", msg);
+	/*read_cr4();*/
+	traversal_process();
+	printk("Cycle Count: %llx\n", get_pmc());
+	return 0;
+}
+
+
 
 ssize_t proc_write(struct file *filp,const char *buf,size_t count,loff_t *offp)
 {
@@ -113,11 +126,11 @@ ssize_t proc_write(struct file *filp,const char *buf,size_t count,loff_t *offp)
 	return count;
 }
 
-static const struct file_operations hello_lkm_fops = {
+static const struct proc_ops hello_lkm_fops = {
 	/*.owner = THIS_MODULE,*/
 	/*.open = hello_lkm_open,*/
-	.read = proc_read,
-	.write = proc_write,
+	.proc_read = proc_read,
+	.proc_write = proc_write,
 	/*.llseek = seq_lseek,*/
 	/*.release = single_release,*/
 };
