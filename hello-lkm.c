@@ -77,7 +77,7 @@ static void traversal_thread_group(struct task_struct * tsk){
 	/*}*/
 	while (curr_thread != tsk){
 		curr_regs = task_pt_regs(curr_thread);
-		printk("\t\tTHREAD TSK=%llx\tPID=%d\tSTACK=%llx \tCOMM=%s\tMM=%llx\tACTIVE_MM=%llx\tUSER_SP=%lx\tUSER_PC=%lx\\n", 
+		printk("\t\tTHREAD TSK=%llx\tPID=%d\tSTACK=%llx \tCOMM=%s\tMM=%llx\tACTIVE_MM=%llx\tUSER_SP=%lx\tUSER_PC=%lx\n", 
 				(u64)curr_thread, curr_thread->pid, (u64)curr_thread->stack,
 				curr_thread->comm, (u64)curr_thread->mm, (u64)curr_thread->active_mm,
 				curr_regs->sp, curr_regs->ip);
